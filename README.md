@@ -1,1 +1,2 @@
-linux practice
+## Linux
+let's learn Linux!
