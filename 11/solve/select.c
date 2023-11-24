@@ -73,10 +73,12 @@ int main() {
 		close(p2[1]);
 		close(p3[1]);
 
-		sleep(1);
-		char buf[] = "i'm child1";
-		printf("child1: send message\n");
-		write(p1[1], buf, sizeof(buf));
+		for(i = 0; i < 3; i++) {
+			sleep((i + 1) % 4);
+			char buf[] = "i'm child1";
+			printf("child1: send message %d\n", i);
+			write(p1[1], buf, sizeof(buf));
+		}
 		printf("child1: bye!\n");
 		exit(0);
 	}
@@ -88,10 +90,12 @@ int main() {
 		close(p1[1]);
 		close(p3[1]);
 
-		sleep(3);
-		char buf[] = "i'm child2";
-		printf("child2: send message\n");
-		write(p2[1], buf, sizeof(buf));
+		for(i = 0; i < 3; i++) {
+			sleep((i + 3) % 4);
+			char buf[] = "i'm child2";
+			printf("child2: send message %d\n", i);
+			write(p2[1], buf, sizeof(buf));
+		}
 		printf("child2: bye!\n");
 		exit(0);
 	}
@@ -103,10 +107,12 @@ int main() {
 		close(p1[1]);
 		close(p2[1]);
 
-		sleep(2);
-		char buf[] = "i'm child3";
-		printf("child3: send message\n");
-		write(p3[1], buf, sizeof(buf));
+		for(i = 0; i < 3; i++) {
+			sleep((i + 5) % 4);
+			char buf[] = "i'm child3";
+			printf("child3: send message %d\n", i);
+			write(p3[1], buf, sizeof(buf));
+		}
 		printf("child3: bye!\n");
 		exit(0);
 	}

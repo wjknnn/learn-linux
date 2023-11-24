@@ -36,7 +36,7 @@ int main()
 
 	if(pid1 > 0 && pid2 > 0) {
 		printf("parent: %d\n", getpid());
-		close(p1[1]); close(p1[1]);
+		close(p1[1]); close(p2[1]);
 
 		FD_ZERO(&initset);
 		FD_SET(p1[0], &initset);
