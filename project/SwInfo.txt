@@ -1,0 +1,5 @@
+Sw1; apple; banana;
+Sw2; banana; apple; melon;
+Sw3; melon;
+Sw4; banana; banana;
+Sw5; apple; apple;
