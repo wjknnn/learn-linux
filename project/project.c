@@ -9,6 +9,7 @@
 #include <sys/wait.h>
 
 #define MAX_STR 1024
+#define MAX_PROCESS 10
 
 struct swInfo {
 	char argv[3][MAX_STR];
@@ -16,7 +17,7 @@ struct swInfo {
 	char time[MAX_STR];
 	char *reason;
 	int cnt;
-}p[10];
+}p[MAX_PROCESS];
 
 int PROCESS_NUM;
 int flag;
@@ -24,6 +25,7 @@ int statusNum;
 
 void readFileList(FILE *fp);		// SW Block 정보 가져오기
 void SwInit(FILE *fp, struct tm *t);
+void reInit(FILE *fp, struct tm *t, int index);
 void SwCheck(int index);
 void countProcess();
 void handler(int signum);		// signal handler
@@ -51,6 +53,7 @@ int main() {
 
 	int i;
 	int pnum = 0;
+	int status[PROCESS_NUM];
 	pid_t pid[PROCESS_NUM];
 
 	// process 생성
@@ -61,32 +64,62 @@ int main() {
 			sleep(1);
 		}
 	}
+
 	
-	//parent process check
+	// parent process check
 	for(i = 0; i < PROCESS_NUM; i++) {
 		if(pid[i] > 0) pnum++;
 		else break;
 	}
 
-	if(pnum == PROCESS_NUM) {
+	int deadn;
+	if(pnum == PROCESS_NUM) { // parent section
 		while(1) {
 			if(flag == 1) {
-				sleep(1);
 				timer = time(NULL);
 				t = localtime(&timer);
-				printf("handler is worked [%d:%d:%d]\n", t->tm_hour, t->tm_min, t->tm_sec);
-				break;
+				if(WIFSIGNALED(statusNum)) {
+					for(deadn = 0; deadn < PROCESS_NUM; deadn++) {
+						if(waitpid(pid[deadn], &status[deadn], WNOHANG) == -1)
+							break;
+					}
+				}
+				reInit(fp, t, deadn);
+				SwCheck(deadn);
+				pid[deadn] = fork();
+				flag = 0;
+				if(pid[deadn] == 0) break;
+				for(int check = 0; check < PROCESS_NUM; check++) {
+					if(waitpid(pid[check], &status[check], WNOHANG) == -1)
+						flag = 1;
+				}
 			}
 		}
+	}
+	// child section
+	sleep(1);
+	int ranNum = 0;
+	while(1) {
+		srand(time(NULL));
+		ranNum = rand() % 3;
+		sleep((ranNum + deadn) % 3);
+		if(ranNum == 0)
+			kill(getpid(), SIGINT);
+		if(ranNum == 1)
+			kill(getpid(), SIGKILL);
+		if(ranNum == 2)
+			kill(getpid(), SIGTERM);
 	}
 }
 
 void handler(int signum) {
 	int pid;
 	int status;
-	while(pid = waitpid(-1, &status, WNOHANG) > 0) {
-		statusNum = status;
-		flag = 1;
+	while((pid = waitpid(-1, &status, WNOHANG)) > 0) {
+		if(flag == 0) {
+			statusNum = status;
+			flag = 1;
+		}
 	}
 }
 
@@ -133,12 +166,23 @@ void SwInit(FILE *fp, struct tm *t) {
 	fclose(fp);
 }
 
+void reInit(FILE *fp, struct tm *t, int index) {
+	fp = fopen("./log/restart.txt", "a");
+
+	sprintf(p[index].time, "%04d.%02d.%02d. %02d:%02d:%02d", t->tm_year + 1900, t->tm_mon + 1, t->tm_mday, t->tm_hour, t->tm_min, t->tm_sec);
+	p[index].reason = strsignal(WTERMSIG(statusNum));
+	p[index].cnt++;
+	fprintf(fp, "%s\t%d\t%s\t%s\n", p[index].name, p[index].cnt, p[index].time, p[index].reason);
+
+	fclose(fp);
+}
+
 void SwCheck(int index) {
 	printf("%s\t%d\t%s\t%s\n", p[index].name, p[index].cnt, p[index].time, p[index].reason);
 }
 
 void countProcess() {
-	for(int i = 0; i < 10; i++) {
+	for(int i = 0; i < MAX_PROCESS; i++) {
 		if(p[i].cnt > 0) PROCESS_NUM++;
 		else break;
 	}
